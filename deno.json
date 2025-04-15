@@ -22,6 +22,7 @@
   ],
   "imports": {
     "$fresh/": "https://deno.land/x/fresh@1.7.3/",
+    "@t/geojson": "npm:@types/geojson@^7946.0.16",
     "maplibre-gl": "npm:maplibre-gl@^5.3.0",
     "preact": "https://esm.sh/preact@10.22.0",
     "preact/": "https://esm.sh/preact@10.22.0/",
