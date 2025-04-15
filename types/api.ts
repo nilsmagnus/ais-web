@@ -8,6 +8,7 @@ export interface ShipPosition{
     static:{
         info: {
             call_sign:string,
+            ship_type: string,
             name:string
         }
     }

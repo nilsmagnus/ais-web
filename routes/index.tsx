@@ -14,5 +14,9 @@ export const handler: Handlers = {
 };
 
 export default function Home({ data }: PageProps<{ origin: string }>) {
-  return <RefreshingBoatMap apiUrl={data.origin} />;
+  return (
+    <div>
+      <RefreshingBoatMap apiUrl={data.origin} />
+    </div>
+  );
 }
