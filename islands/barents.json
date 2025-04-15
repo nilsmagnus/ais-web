@@ -1,0 +1,168 @@
+{
+  "version": 8,
+  "id": "nilsfarvann",
+  "name": "Farvann",
+  "zoom": 1,
+  "pitch": 0,
+  "glyphs": "https://demotiles.maplibre.org/font/{fontstack}/{range}.pbf",
+  "sources": {
+    "barents": {
+      "type": "vector",
+      "tiles": [
+        "https://tiles01.barentswatch.no/data/v3/{z}/{x}/{y}.pbf"
+      ]
+    },
+    "navi": {
+      "type": "vector",
+      "tiles": [
+        "https://www.barentswatch.no/bwapi/v1/tiles/navigationinstallation/{z}/{x}/{y}.pbf"
+      ]
+    },
+    "fairways": {
+      "type": "vector",
+      "tiles": [
+        "https://www.barentswatch.no/bwapi/v1/tiles/fairways/{z}/{x}/{y}.pbf"
+      ]
+    }
+  },
+  "vector-layers": [
+    {
+      "id": "boundary",
+      "fields": {
+        "name": "String",
+        "class": "String"
+      }
+    }
+  ],
+  "layers": [
+{
+"id":"background",
+  "type": "background",
+  "paint": {
+    "background-color": "#FFFFFF"
+  }
+}
+,
+    {
+      "id": "water",
+      "type": "fill",
+      "source": "barents",
+      "source-layer": "water",
+      "minzoom": 0,
+      "maxzoom": 22,
+      "paint": {
+        "fill-color": "#B2D7DF"
+      }
+    },
+    {
+      "id": "boundary",
+      "type": "line",
+      "source": "barents",
+      "source-layer": "boundary",
+      "minzoom": 0,
+      "maxzoom": 22
+    },
+    {
+      "id": "building",
+      "type": "fill",
+      "source": "barents",
+      "source-layer": "building",
+      "minzoom": 8,
+      "maxzoom": 22,
+      "paint": {
+        "fill-color": "#DDDDDD"
+      }
+    },
+    {
+      "id": "place",
+      "type": "symbol",
+      "source": "barents",
+      "source-layer": "place",
+      "minzoom": 0,
+      "maxzoom": 22,
+      "layout": {
+        "text-field": ["get", "name"],
+        "text-size": [
+          "interpolate",
+          ["linear"],
+          ["get", "rank"],
+          1, 16,
+          2, 14,
+          3, 12
+        ]
+      }
+    },
+    {
+      "id": "fairways",
+      "type": "line",
+      "source": "fairways",
+      "source-layer": "fairways",
+      "minzoom": 7,
+      "maxzoom": 22,
+      "paint": {
+        "line-color":  [
+          "match",
+          ["get", "fairwaytype"],
+          "Biled", "#0000ff",
+          "Hovedled", "#ff0000",
+          "#000000"
+        ],
+        "line-width": 2,
+        "line-opacity": 0.3,
+        "line-dasharray": [2, 2]
+      }
+    },
+    {
+      "id": "navigationinstallationlightsector",
+      "type": "fill",
+      "source": "navi",
+      "source-layer": "navigationinstallationlightsector",
+      "minzoom": 0,
+      "maxzoom": 22,
+      "paint": {
+        "fill-opacity": 0.5,
+        "fill-color": [
+          "match",
+          ["get", "lightcolour"],
+          1, "#DBE6B3",
+          2, "#C86C6F",
+          3, "#0000FF",
+          4, "#86C97A",
+          "#000000"
+        ]
+      }
+    },
+    {
+      "id": "navigationinstallationlightsectorline",
+      "type": "line",
+      "source": "navi",
+      "source-layer": "navigationinstallationlightsectorline",
+      "minzoom": 10,
+      "maxzoom": 22,
+      "paint": {"line-color": "#eeeeee", "line-width": 1, "line-opacity": 0.6}
+    },
+    {
+      "id": "navigationallights",
+      "type": "circle",
+      "source": "navi",
+      "source-layer": "navigationinstallationlight",
+      "minzoom": 10,
+      "maxzoom": 22,
+      "paint": {
+        "circle-color": [
+          "match",
+          ["get", "lightcolour"],
+          1, "#C0DCD0",
+          2, "#FAD6D4",
+          4, "#94CDB4",
+          "#ffffff"
+        ],
+        "circle-opacity": 1
+      }
+    }
+  ],
+  "bearing": 0,
+  "metadata": {
+    "openmaptiles:version": "3.x"
+  }
+}
