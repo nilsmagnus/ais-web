@@ -6,7 +6,7 @@ export interface ShipPosition{
     sog: number,
     lastSeen:string,
     static:{
-        info: {
+        info?: {
             call_sign:string,
             ship_type: string,
             name:string
