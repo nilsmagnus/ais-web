@@ -2,8 +2,20 @@ export interface ShipType{
     typeId : number, 
     typeName: string,
 }
-export const shiptypes = [
+
+export const shiptypes: ShipType[] = [
   {typeId: 0, typeName: "Ukjent"},
+  {typeId: 1, typeName: "Ukjent"},
+  {typeId: 2, typeName: "Ukjent"},
+  {typeId: 3, typeName: "Ukjent"},
+  {typeId: 4, typeName: "Ukjent"},
+  {typeId: 5, typeName: "Ukjent"},
+  {typeId: 6, typeName: "Ukjent"},
+  {typeId: 7, typeName: "Ukjent"},
+  {typeId: 8, typeName: "Ukjent"},
+  {typeId: 9, typeName: "Ukjent"},
+  {typeId: 10, typeName: "Ukjent"},
+  {typeId: 12, typeName: "Ukjent"},
   {typeId: 20, typeName: "Wing in ground (WIG)"},
   {typeId: 21, typeName: "Wing in ground (WIG), Hazardous category A"},
   {typeId: 22, typeName: "Wing in ground (WIG), Hazardous category B"},
@@ -45,10 +57,10 @@ export const shiptypes = [
   {typeId: 58, typeName: "Medisinsk transport"},
   {typeId: 59, typeName: "Noncombatant ship according to RR Resolution No. 18"},
   {typeId: 60, typeName: "Passasjerbåt"},
-  {typeId: 61, typeName: "Passenger, Hazardous category A"},
-  {typeId: 62, typeName: "Passenger, Hazardous category B"},
-  {typeId: 63, typeName: "Passenger, Hazardous category C"},
-  {typeId: 64, typeName: "Passenger, Hazardous category D"},
+  {typeId: 61, typeName: "Passasjerbåt, Hazardous category A"},
+  {typeId: 62, typeName: "Passasjerbåt, Hazardous category B"},
+  {typeId: 63, typeName: "Passasjerbåt, Hazardous category C"},
+  {typeId: 64, typeName: "Passasjerbåt, Hazardous category D"},
   {typeId: 65, typeName: "Passasjerbåt"},
   {typeId: 66, typeName: "Passasjerbåt"},
   {typeId: 67, typeName: "Passasjerbåt"},
@@ -85,3 +97,36 @@ export const shiptypes = [
   {typeId: 98, typeName: "Other Type"},
   {typeId: 99, typeName: "Other Type, no additional information"},
 ];
+
+
+export function shipColor(ship_type: string): string {
+  const s = +ship_type;
+  switch (true) {
+    case (s == 10):
+      return "red";
+    case (s >=90):
+      return "brown";
+    case (s == 36):
+      return "lightgreen";
+    case (s == 37):
+      return "pink";
+    case (s == 55):
+      return "darkblue";
+    case (s == 30):
+      return "orange";
+    case (s == 35):
+      return "darkgreen";
+    case (s >= 50 && s < 60):
+      return "purple";
+    case (s >= 40 && s < 50):
+      return "yellow";
+    case (s >= 60 && s < 70):
+      return "green";
+    case (s >= 70 && s < 80):
+      return "red";
+    case (s >= 80 && s < 90):
+      return "black";
+    default:
+      return "cyan";
+  }
+}

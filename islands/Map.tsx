@@ -6,7 +6,8 @@ import { NONE } from "$fresh/runtime.ts";
 import { FeatureCollection } from "@t/geojson";
 import { MapBounds, ShipPosition } from "../types/api.ts";
 import { effect, Signal } from "@preact/signals";
-import { shiptypes } from "../types/shipconstants.ts";
+import { shipColor, shiptypes } from "../types/shipconstants.ts";
+import { createShipMarker } from "../components/ShipMarker.ts";
 
 interface BoapMapProps {
   shipLocations: Signal<ShipPosition[]>;
@@ -63,33 +64,50 @@ export default function BoatMap(
     function addLayers() {
       map.current!.addSource("boat-source", boatSource(shipLocations.value));
 
+      shiptypes.map((shipType)=>{
+        const img = new Image();
+        img.onload = () => {
+          map.current!.addImage(`${shipType.typeId}`, img);
+        };
+        img.src = createShipMarker(`${shipType.typeId}`);
+      });
+
+
       map.current!.addLayer({
-        id: "boat-layer",
-        type: "circle",
+        id: "boat-names",
+        type: "symbol",
         source: "boat-source",
-        paint: {
-          "circle-color": ["get", "color"],
-          "circle-radius": 5,
+        minzoom: 0,
+        maxzoom: 20,
+        layout: {
         },
       });
 
       map.current!.addLayer({
-        id: "boat-category",
-        type: "symbol",
-        source: "boat-source",
-        minzoom: 9,
-        maxzoom: 20,
+        id: 'boat-icon-layer',
+        type: 'symbol',
+        source: 'boat-source',
         layout: {
-          "text-field": ["get", "shipName"],
           "text-anchor": "center",
           "text-offset": [0, -0.6],
-          "text-rotate" :["get", "heading"]
-
-        },
-
-        paint: {
-          "text-color": "black",
-        },
+          "text-field": ['get',"shipName"],
+          'text-allow-overlap':true,          
+          'icon-image':  ['get', 'shipType'],
+          'icon-size': 1,
+          'icon-allow-overlap': true,
+          'icon-anchor': 'bottom', 
+          'icon-rotate':['get', 'heading'],
+        }, 
+        paint:{
+          'text-opacity': [
+            'interpolate',
+            ['linear'],
+            ['zoom'],
+            13, 0,     // At zoom level 8 and below, opacity is 0 (invisible)
+            14, 1,     // At zoom level 9, opacity is 1 (fully visible)
+            20, 1     // Remains visible up to zoom level 20
+          ],
+        }
       });
 
     }
@@ -143,6 +161,7 @@ function boatSourceData(shipLocations: ShipPosition[]): FeatureCollection {
         heading: s.trueHeading == 511? undefined: s.trueHeading,
         shipName: atob(s.static.info?.name ?? "QklPIE5BVklHQVRPUg=="),
         category: categorise(s),
+        shipType: s.static.info?.ship_type ?? "0",
         color: shipColor(s.static.info?.ship_type ?? "0"),
       },
       geometry: {
@@ -153,37 +172,6 @@ function boatSourceData(shipLocations: ShipPosition[]): FeatureCollection {
   };
 }
 
-function shipColor(ship_type: string): string {
-  const s = +ship_type;
-  switch (true) {
-    case (s == 10):
-      return "lightblue";
-    case (s >=90):
-      return "brown";
-    case (s == 36):
-      return "lightgreen";
-    case (s == 37):
-      return "pink";
-    case (s == 55):
-      return "darkblue";
-    case (s == 30):
-      return "orange";
-    case (s == 35):
-      return "darkgreen";
-    case (s >= 50 && s < 60):
-      return "purple";
-    case (s >= 40 && s < 50):
-      return "yellow";
-    case (s >= 60 && s < 70):
-      return "green";
-    case (s >= 70 && s < 80):
-      return "red";
-    case (s >= 80 && s < 90):
-      return "black";
-    default:
-      return "cyan";
-  }
-}
 
 function categorise(s: ShipPosition): string {
   if(s.static.info?.ship_type){
