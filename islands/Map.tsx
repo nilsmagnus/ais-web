@@ -7,7 +7,10 @@ import { FeatureCollection } from "@t/geojson";
 import { MapBounds, ShipPosition } from "../types/api.ts";
 import { effect, Signal } from "@preact/signals";
 import { shipColor, shiptypes } from "../types/shipconstants.ts";
-import { createShipMarker } from "../components/ShipMarker.ts";
+import {
+  createShipMarker,
+  createStillShipMarker,
+} from "../components/ShipMarker.tsx";
 
 interface BoapMapProps {
   shipLocations: Signal<ShipPosition[]>;
@@ -19,7 +22,7 @@ export default function BoatMap(
 ) {
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<maplibregl.Map | null>(null);
-
+  const hoverPopup = useRef<maplibregl.Popup | null>(null);
   // update map when shiplocations change
   effect(() => {
     shipLocations.value; // do not remove reference
@@ -64,52 +67,98 @@ export default function BoatMap(
     function addLayers() {
       map.current!.addSource("boat-source", boatSource(shipLocations.value));
 
-      shiptypes.map((shipType)=>{
+      shiptypes.map((shipType) => {
         const img = new Image();
         img.onload = () => {
           map.current!.addImage(`${shipType.typeId}`, img);
         };
         img.src = createShipMarker(`${shipType.typeId}`);
+        const stillImg = new Image();
+        stillImg.onload = () => {
+          map.current!.addImage(`still-${shipType.typeId}`, stillImg);
+        };
+        stillImg.src = createStillShipMarker(`${shipType.typeId}`);
       });
 
-
       map.current!.addLayer({
-        id: "boat-names",
+        id: "boat-icon-layer",
         type: "symbol",
         source: "boat-source",
-        minzoom: 0,
-        maxzoom: 20,
-        layout: {
-        },
-      });
-
-      map.current!.addLayer({
-        id: 'boat-icon-layer',
-        type: 'symbol',
-        source: 'boat-source',
         layout: {
           "text-anchor": "center",
           "text-offset": [0, -0.6],
-          "text-field": ['get',"shipName"],
-          'text-allow-overlap':true,          
-          'icon-image':  ['get', 'shipType'],
-          'icon-size': 1,
-          'icon-allow-overlap': true,
-          'icon-anchor': 'bottom', 
-          'icon-rotate':['get', 'heading'],
-        }, 
-        paint:{
-          'text-opacity': [
-            'interpolate',
-            ['linear'],
-            ['zoom'],
-            13, 0,     // At zoom level 8 and below, opacity is 0 (invisible)
-            14, 1,     // At zoom level 9, opacity is 1 (fully visible)
-            20, 1     // Remains visible up to zoom level 20
+          "text-field": ["get", "shipName"],
+          "text-allow-overlap": true,
+          "icon-image": [
+            "case",
+            ["has", "heading"], // If heading equals 511
+            ["get", "shipType"],
+            ["concat", "still-", ["get", "shipType"]],
           ],
-        }
+          "icon-size": 1,
+          "icon-allow-overlap": true,
+          "icon-anchor": "bottom",
+          "icon-rotate": ["get", "heading"],
+        },
+        paint: {
+          "text-opacity": [
+            "interpolate",
+            ["linear"],
+            ["zoom"],
+            13,
+            0,
+            14,
+            1,
+            20,
+            1,
+          ],
+        },
       });
 
+      hoverPopup.current = new maplibregl.Popup({
+        closeButton: false,
+        closeOnClick: false,
+        offset: 15,
+        className: "boat-icon-layer", // For custom styling
+      });
+
+      map.current!.on("mouseenter", "boat-icon-layer", (e) => {
+        // Change cursor style
+        map.current!.getCanvas().style.cursor = "pointer";
+
+        // Get the feature data
+        if (!e.features || e.features.length === 0) return;
+        const feature = e.features[0];
+        const props = feature.properties;
+
+        // Create popup content
+        const popupContent = `
+          <div class="ship-info-box">
+            <h4>${props.shipName}</h4>
+            <h4>${props.userId}</h4>
+            <div>Type: ${props.category}</div>
+            <div>Fart: ${props.sog ?? "-"} knots</div>
+            <div>Retning: ${
+          props.heading === "511" || props.heading === undefined
+            ? "N/A"
+            : props.heading + "°"
+        }</div>
+          </div>
+        `;
+
+        // Set popup position and content
+        if (feature.geometry.type === "Point") {
+          hoverPopup.current!
+            .setLngLat([
+              feature.geometry.coordinates[0],
+              feature.geometry.coordinates[1],
+            ])
+            .setHTML(popupContent)
+            .addTo(map.current!);
+        } else {
+          console.log("feature geometry type is ", feature.geometry.type);
+        }
+      });
     }
 
     if (map.current.loaded()) {
@@ -158,9 +207,11 @@ function boatSourceData(shipLocations: ShipPosition[]): FeatureCollection {
     features: shipLocations.map((s: ShipPosition) => ({
       type: "Feature",
       properties: {
-        heading: s.trueHeading == 511? undefined: s.trueHeading,
+        heading: s.trueHeading == 511 ? undefined : s.trueHeading,
         shipName: atob(s.static.info?.name ?? "QklPIE5BVklHQVRPUg=="),
         category: categorise(s),
+        sog: s.sog ?? "-",
+        userId: s.userId,
         shipType: s.static.info?.ship_type ?? "0",
         color: shipColor(s.static.info?.ship_type ?? "0"),
       },
@@ -172,17 +223,16 @@ function boatSourceData(shipLocations: ShipPosition[]): FeatureCollection {
   };
 }
 
-
 function categorise(s: ShipPosition): string {
-  if(s.static.info?.ship_type){
+  if (s.static.info?.ship_type) {
     const t = +s.static.info.ship_type;
-    const shipType = shiptypes.find((st)=>st.typeId == t);
-    if(shipType !== undefined){
+    const shipType = shiptypes.find((st) => st.typeId == t);
+    if (shipType !== undefined) {
       return shipType.typeName;
     }
   }
-  if(`${s.userId}`.startsWith("109")){
+  if (`${s.userId}`.startsWith("109")) {
     return "Bøye";
   }
-  return s.static.info?.ship_type ??"u";
+  return s.static.info?.ship_type ?? "u";
 }

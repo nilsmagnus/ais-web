@@ -1,6 +1,7 @@
 import RefreshingBoatMap from "../islands/RefreshingBoatMap.tsx";
 
 import { Handlers, PageProps } from "$fresh/server.ts";
+import Legends from "../islands/Legends.tsx";
 
 export const handler: Handlers = {
   GET(req, ctx) {
@@ -17,6 +18,8 @@ export default function Home({ data }: PageProps<{ origin: string }>) {
   return (
     <div>
       <RefreshingBoatMap apiUrl={data.origin} />
+      <Legends />
+
     </div>
   );
 }

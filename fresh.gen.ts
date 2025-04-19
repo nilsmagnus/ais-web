@@ -7,6 +7,7 @@ import * as $_app from "./routes/_app.tsx";
 import * as $about from "./routes/about.tsx";
 import * as $api_ais from "./routes/api/ais.ts";
 import * as $index from "./routes/index.tsx";
+import * as $Legends from "./islands/Legends.tsx";
 import * as $Map from "./islands/Map.tsx";
 import * as $RefreshingBoatMap from "./islands/RefreshingBoatMap.tsx";
 import type { Manifest } from "$fresh/server.ts";
@@ -20,6 +21,7 @@ const manifest = {
     "./routes/index.tsx": $index,
   },
   islands: {
+    "./islands/Legends.tsx": $Legends,
     "./islands/Map.tsx": $Map,
     "./islands/RefreshingBoatMap.tsx": $RefreshingBoatMap,
   },
