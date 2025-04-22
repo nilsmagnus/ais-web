@@ -5,7 +5,8 @@
 import * as $_404 from "./routes/_404.tsx";
 import * as $_app from "./routes/_app.tsx";
 import * as $about from "./routes/about.tsx";
-import * as $api_ais from "./routes/api/ais.ts";
+import * as $api_positions_bounded from "./routes/api/positions_bounded.ts";
+import * as $api_trails from "./routes/api/trails.ts";
 import * as $index from "./routes/index.tsx";
 import * as $Legends from "./islands/Legends.tsx";
 import * as $Map from "./islands/Map.tsx";
@@ -17,7 +18,8 @@ const manifest = {
     "./routes/_404.tsx": $_404,
     "./routes/_app.tsx": $_app,
     "./routes/about.tsx": $about,
-    "./routes/api/ais.ts": $api_ais,
+    "./routes/api/positions_bounded.ts": $api_positions_bounded,
+    "./routes/api/trails.ts": $api_trails,
     "./routes/index.tsx": $index,
   },
   islands: {

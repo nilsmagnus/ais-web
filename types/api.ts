@@ -24,3 +24,12 @@ export interface MapBounds {
     north: number;
     south: number;
   };
+
+  export interface Trails{
+    [key: string]: LatLon[]
+  }
+
+  export interface LatLon {
+    lat: number, 
+    lon: number
+  }

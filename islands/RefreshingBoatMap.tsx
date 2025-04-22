@@ -1,7 +1,13 @@
 import BoatMap from "./Map.tsx";
-import { useEffect, useRef } from "preact/hooks";
-import { LocationResponse, MapBounds, ShipPosition } from "../types/api.ts";
-import { effect, untracked, useSignal } from "@preact/signals";
+import { useEffect, useRef, useState } from "preact/hooks";
+import {
+  LocationResponse,
+  MapBounds,
+  ShipPosition,
+  Trails,
+} from "../types/api.ts";
+import { effect, signal, untracked, useSignal } from "@preact/signals";
+import ShipInfo from "../components/ShipInfo.tsx";
 
 export default function RefreshingBoatMap({ apiUrl }: { apiUrl: string }) {
   const mapBounds = useRef<MapBounds>({
@@ -14,10 +20,25 @@ export default function RefreshingBoatMap({ apiUrl }: { apiUrl: string }) {
   const mapBoundsS = useSignal(mapBounds.current);
   const shipLocations = useSignal<ShipPosition[]>([]);
 
+  const [selectedUserIds, setSelectedUserids] = useState<string[]>([]);
+
+  const [trails, setTrails] = useState<Trails>({});
+
+  useEffect(() => {
+    console.log("init userids");
+    const url = new URL(globalThis.window.location.href);
+    setSelectedUserids(url.searchParams.getAll("u"));
+  }, []);
+
+  useEffect(() => {
+    console.log("fetch trails");
+    fetchTrails(apiUrl, selectedUserIds).then((t) => setTrails(t));
+  }, [selectedUserIds]);
+
   // refresh data continuously
   useEffect(() => {
     function refresh() {
-      refreshData(apiUrl, mapBounds.current)
+      fetchMapPositions(apiUrl, mapBounds.current)
         .then((v) => {
           shipLocations.value = v.positions;
         });
@@ -32,32 +53,82 @@ export default function RefreshingBoatMap({ apiUrl }: { apiUrl: string }) {
   // do refresh when bounds change
   effect(() => {
     mapBounds.current = mapBoundsS.value;
-    refreshData(apiUrl, mapBounds.current)
+    fetchMapPositions(apiUrl, mapBounds.current)
       .then((v) => {
         untracked(() => {
           shipLocations.value = v.positions;
         });
-      }).finally(() => {
       });
   });
 
+  const toggleUserIdSelect=(userId: string)=> {
+    if (selectedUserIds.includes(userId)) {
+      return;
+    }
+    setSelectedUserids([...selectedUserIds, userId]);
+
+    // const url = new URL(globalThis.location.href);
+    // url.searchParams.append("u", userId);
+    // globalThis.history.pushState({}, "", url);
+  }
+
+  function clearSelection() {
+    console.log("clear selection");
+    const url = new URL(globalThis.location.href);
+    url.searchParams.delete("u");
+    globalThis.history.pushState({}, "", url);
+
+    setSelectedUserids([]);
+  }
+
   return (
-    <BoatMap
-      shipLocations={shipLocations}
-      boundsUpdated={(v) => {
-        mapBoundsS.value = v;
-      }}
-    >
-    </BoatMap>
+    <div>
+      <BoatMap
+        shipLocations={shipLocations}
+        trails={trails}
+        toggleUserId={toggleUserIdSelect}
+        boundsUpdated={(v) => {
+          mapBoundsS.value = v;
+        }}
+      >
+      </BoatMap>
+      <div className="absolute bottom-1 left-1 bg-slate-200 rounded-md p-2 flex">
+        <div>
+          {selectedUserIds.map((u) => {
+            return <div key={u}>{u}</div>;
+          })}
+        </div>
+        <div className="cursor-pointer" onClick={clearSelection}>
+          {selectedUserIds.length}❌
+        </div>
+      </div>
+    </div>
   );
 }
 
-async function refreshData(
+async function fetchTrails(apiUrl: string, userIds: string[]): Promise<Trails> {
+  if (userIds.length === 0) {
+    return {};
+  }
+  try {
+    const url = new URL("/api/trails", apiUrl);
+    userIds.forEach((u) => url.searchParams.append("user-id", u));
+
+    const response = await fetch(url);
+    return await response.json() as Trails;
+  } catch (e) {
+    console.log("trails failed to fetch");
+    console.log(e);
+    return {};
+  }
+}
+
+async function fetchMapPositions(
   apiUrl: string,
   bounds: MapBounds,
 ): Promise<LocationResponse> {
   try {
-    const url = new URL("/api/ais", apiUrl);
+    const url = new URL("/api/positions_bounded", apiUrl);
     url.searchParams.append("north", `${bounds.north}`);
     url.searchParams.append("east", `${bounds.east}`);
     url.searchParams.append("west", `${bounds.west}`);
