@@ -5,7 +5,6 @@ import mapStyles from "./barents.json" with { type: "json" };
 import { NONE } from "$fresh/runtime.ts";
 import { FeatureCollection } from "@t/geojson";
 import { MapBounds, ShipPosition, Trails } from "../types/api.ts";
-import { effect, Signal } from "@preact/signals";
 import { shipColor, shiptypes } from "../types/shipconstants.ts";
 import {
   createShipMarker,
@@ -13,7 +12,7 @@ import {
 } from "../components/ShipMarker.tsx";
 
 interface BoapMapProps {
-  shipLocations: Signal<ShipPosition[]>;
+  shipLocations: ShipPosition[];
   boundsUpdated: (bounds: MapBounds) => void;
   trails: Trails;
   toggleUserId: (userId: string) => void;
@@ -26,15 +25,14 @@ export default function BoatMap(
   const map = useRef<maplibregl.Map | null>(null);
   const hoverPopup = useRef<maplibregl.Popup | null>(null);
   // update map when shiplocations change
-  effect(() => {
-    shipLocations.value; // do not remove reference
+  useEffect(() => {
     if (!map.current) {
       return;
     }
 
     (map.current!.getSource("boat-source") as maplibregl.GeoJSONSource)
-      ?.setData(boatSourceData(shipLocations.value));
-  });
+      ?.setData(boatSourceData(shipLocations));
+  }, [shipLocations]);
 
   useEffect(()=>{
     if (!map.current || !trails) {
@@ -92,7 +90,7 @@ export default function BoatMap(
       console.log(ts);
 
       map.current!.addSource("trail-source", ts);
-      map.current!.addSource("boat-source", boatSource(shipLocations.value));
+      map.current!.addSource("boat-source", boatSource(shipLocations));
 
       map.current!.addLayer(createBoatLayer());
       map.current!.addLayer(createTrailLayer());
@@ -123,6 +121,7 @@ export default function BoatMap(
 
     if (map.current.loaded()) {
       addLayers();
+      updateBounds(); 
     } else {
       map.current.on("load", addLayers);
     }

@@ -6,7 +6,6 @@ import {
   ShipPosition,
   Trails,
 } from "../types/api.ts";
-import { effect, signal, untracked, useSignal } from "@preact/signals";
 import ShipInfo from "../components/ShipInfo.tsx";
 
 export default function RefreshingBoatMap({ apiUrl }: { apiUrl: string }) {
@@ -17,8 +16,7 @@ export default function RefreshingBoatMap({ apiUrl }: { apiUrl: string }) {
     west: 5.3,
   });
 
-  const mapBoundsS = useSignal(mapBounds.current);
-  const shipLocations = useSignal<ShipPosition[]>([]);
+  const [shipLocations, setShipLocations] = useState<ShipPosition[]>([]);
 
   const [selectedUserIds, setSelectedUserids] = useState<string[]>([]);
 
@@ -40,26 +38,21 @@ export default function RefreshingBoatMap({ apiUrl }: { apiUrl: string }) {
     function refresh() {
       fetchMapPositions(apiUrl, mapBounds.current)
         .then((v) => {
-          shipLocations.value = v.positions;
+          setShipLocations(v.positions);
         });
     }
-
-    refresh();
     const intervalId = setInterval(refresh, 10000);
-
     return () => clearInterval(intervalId);
-  }, []);
+  }, [19899]);
 
   // do refresh when bounds change
-  effect(() => {
-    mapBounds.current = mapBoundsS.value;
-    fetchMapPositions(apiUrl, mapBounds.current)
+  const boundsUpdated = (bounds: MapBounds)=>{
+    mapBounds.current = bounds;
+    fetchMapPositions(apiUrl, bounds)
       .then((v) => {
-        untracked(() => {
-          shipLocations.value = v.positions;
-        });
+          setShipLocations(v.positions);
       });
-  });
+  };
 
   const toggleUserIdSelect=(userId: string)=> {
     if (selectedUserIds.includes(userId)) {
@@ -87,9 +80,7 @@ export default function RefreshingBoatMap({ apiUrl }: { apiUrl: string }) {
         shipLocations={shipLocations}
         trails={trails}
         toggleUserId={toggleUserIdSelect}
-        boundsUpdated={(v) => {
-          mapBoundsS.value = v;
-        }}
+        boundsUpdated={boundsUpdated}
       >
       </BoatMap>
       <div className="absolute bottom-1 left-1 bg-slate-200 rounded-md p-2 flex">
