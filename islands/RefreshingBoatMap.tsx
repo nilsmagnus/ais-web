@@ -1,3 +1,4 @@
+import { JSX } from "preact";
 import BoatMap from "./Map.tsx";
 import { useEffect, useRef, useState } from "preact/hooks";
 import {
@@ -17,21 +18,33 @@ export default function RefreshingBoatMap({ apiUrl }: { apiUrl: string }) {
   });
 
   const [shipLocations, setShipLocations] = useState<ShipPosition[]>([]);
-
   const [selectedUserIds, setSelectedUserids] = useState<string[]>([]);
-
+  const [selectedShips, setSelectedShips] = useState<ShipPosition[]>([]);
   const [trails, setTrails] = useState<Trails>({});
 
   useEffect(() => {
-    console.log("init userids");
     const url = new URL(globalThis.window.location.href);
-    setSelectedUserids(url.searchParams.getAll("u"));
+    setTimeout(() => {
+      setSelectedUserids(url.searchParams.getAll("u"));
+    }, 200);
   }, []);
 
   useEffect(() => {
-    console.log("fetch trails");
-    fetchTrails(apiUrl, selectedUserIds).then((t) => setTrails(t));
+    fetchTrails(apiUrl, selectedUserIds).then((t) => {
+      setTrails(t);
+    });
   }, [selectedUserIds]);
+
+  useEffect(() => {
+    const selectedShipsUpdate: ShipPosition[] = [];
+    selectedUserIds.forEach((u) => {
+      const aShip = shipLocations.filter((s) => s.userId === +u);
+      if (aShip.length > 0) {
+        selectedShipsUpdate.push(aShip[0]);
+      }
+    });
+    setSelectedShips(selectedShipsUpdate);
+  }, [selectedUserIds, shipLocations]);
 
   // refresh data continuously
   useEffect(() => {
@@ -46,27 +59,34 @@ export default function RefreshingBoatMap({ apiUrl }: { apiUrl: string }) {
   }, [19899]);
 
   // do refresh when bounds change
-  const boundsUpdated = (bounds: MapBounds)=>{
+  const boundsUpdated = (bounds: MapBounds) => {
     mapBounds.current = bounds;
     fetchMapPositions(apiUrl, bounds)
       .then((v) => {
-          setShipLocations(v.positions);
+        setShipLocations(v.positions);
       });
   };
 
-  const toggleUserIdSelect=(userId: string)=> {
-    if (selectedUserIds.includes(userId)) {
-      return;
-    }
-    setSelectedUserids([...selectedUserIds, userId]);
+  const toggleUserIdSelect = (userId: string) => {
+    const currentUrl = new URL(globalThis.window.location.href);
+    const userIds = currentUrl.searchParams.getAll("u");
 
-    // const url = new URL(globalThis.location.href);
-    // url.searchParams.append("u", userId);
-    // globalThis.history.pushState({}, "", url);
-  }
+    let newSelectedUserIds;
+    if (userIds.includes(userId)) {
+      newSelectedUserIds = userIds.filter((id) => id !== userId);
+    } else {
+      newSelectedUserIds = [...userIds, userId];
+    }
+    setSelectedUserids(newSelectedUserIds);
+
+    // Update URL parameters
+    const url = new URL(globalThis.location.href);
+    url.searchParams.delete("u");
+    newSelectedUserIds.forEach((id) => url.searchParams.append("u", id));
+    globalThis.history.pushState({}, "", url);
+  };
 
   function clearSelection() {
-    console.log("clear selection");
     const url = new URL(globalThis.location.href);
     url.searchParams.delete("u");
     globalThis.history.pushState({}, "", url);
@@ -83,16 +103,15 @@ export default function RefreshingBoatMap({ apiUrl }: { apiUrl: string }) {
         boundsUpdated={boundsUpdated}
       >
       </BoatMap>
-      <div className="absolute bottom-1 left-1 bg-slate-200 rounded-md p-2 flex">
-        <div>
-          {selectedUserIds.map((u) => {
-            return <div key={u}>{u}</div>;
-          })}
-        </div>
-        <div className="cursor-pointer" onClick={clearSelection}>
-          {selectedUserIds.length}❌
-        </div>
-      </div>
+      {selectedShips.length > 0 &&
+        (
+          <div className="absolute bottom-1 left-1 bg-slate-200 rounded-md p-2 flex">
+            <ShipInfo ships={selectedShips} />
+            <div className="cursor-pointer ml-1" onClick={clearSelection}>
+              ❌
+            </div>
+          </div>
+        )}
     </div>
   );
 }
@@ -108,8 +127,6 @@ async function fetchTrails(apiUrl: string, userIds: string[]): Promise<Trails> {
     const response = await fetch(url);
     return await response.json() as Trails;
   } catch (e) {
-    console.log("trails failed to fetch");
-    console.log(e);
     return {};
   }
 }
@@ -129,8 +146,6 @@ async function fetchMapPositions(
     const result = await response.json() as LocationResponse;
     return result;
   } catch (e) {
-    console.log("something bad happened!");
-    console.log(e);
     return { positions: [] };
   }
 }

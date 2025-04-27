@@ -34,12 +34,12 @@ export default function BoatMap(
       ?.setData(boatSourceData(shipLocations));
   }, [shipLocations]);
 
-  useEffect(()=>{
+  useEffect(() => {
     if (!map.current || !trails) {
       return;
     }
     (map.current!.getSource("trail-source") as maplibregl.GeoJSONSource)
-    ?.setData(trailSourceData(trails));
+      ?.setData(trailSourceData(trails));
   }, [trails]);
 
   useEffect(function initializeMap() {
@@ -56,7 +56,6 @@ export default function BoatMap(
     const updateBounds = () => {
       const bounds = map.current?.getBounds();
       if (bounds) {
-        console.log("updateBounds - > boundsUpdated")
         boundsUpdated({
           north: bounds.getNorth(),
           east: bounds.getEast(),
@@ -87,7 +86,6 @@ export default function BoatMap(
       });
 
       const ts = trailSource(trails);
-      console.log(ts);
 
       map.current!.addSource("trail-source", ts);
       map.current!.addSource("boat-source", boatSource(shipLocations));
@@ -102,11 +100,11 @@ export default function BoatMap(
         className: "boat-icon-layer",
       });
 
-      map.current!.on(
-        "mouseenter",
-        "boat-icon-layer",
-        createBoatPopup(map, hoverPopup),
-      );
+      // map.current!.on(
+      //   "mouseenter",
+      //   "boat-icon-layer",
+      //   createBoatPopup(map, hoverPopup),
+      // );
       map.current!.on("click", "boat-icon-layer", (
         e:
           & maplibregl.MapMouseEvent
@@ -116,14 +114,17 @@ export default function BoatMap(
         const feature = e.features[0];
         const props = feature.properties;
         toggleUserId(`${props.userId}`);
+        createBoatPopup(map, hoverPopup)(e);
       });
     }
 
     if (map.current.loaded()) {
       addLayers();
-      updateBounds(); 
     } else {
-      map.current.on("load", addLayers);
+      map.current.on("load", () => {
+        updateBounds();
+        addLayers();
+      });
     }
 
     // Cleanup on unmount
@@ -198,15 +199,15 @@ function createBoatPopup(
 
 function createTrailLayer(): maplibregl.AddLayerObject {
   return {
-    id:"trail-layer", 
-    type: "line", 
-    source:"trail-source", 
-    paint:{
-      "line-color":"red",
-      "line-width":2,
-      "line-opacity":0.9
-    }
-  }
+    id: "trail-layer",
+    type: "line",
+    source: "trail-source",
+    paint: {
+      "line-color": ['get', 'color'],
+      "line-width": 2,
+      "line-opacity": 0.9,
+    },
+  };
 }
 function createBoatLayer(): maplibregl.AddLayerObject {
   return {
@@ -254,17 +255,22 @@ function trailSource(
   };
 }
 
-function trailSourceData(trails: Trails): FeatureCollection{
+function trailSourceData(trails: Trails): FeatureCollection {
   return {
     type: "FeatureCollection",
     features: Object.entries(trails).map((k, v) => {
       return {
         type: "Feature",
-        properties: {},
-        geometry: { type: "LineString", coordinates: k[1].map((c)=>[c.lon, c.lat]) },
+        properties: {
+          color: trailColor(v)
+        },
+        geometry: {
+          type: "LineString",
+          coordinates: k[1].map((c) => [c.lon, c.lat]),
+        },
       };
     }),
-  }
+  };
 }
 
 function boatSource(
@@ -310,4 +316,20 @@ function categorise(s: ShipPosition): string {
     return "Bøye";
   }
   return s.static.info?.ship_type ?? "u";
+}
+
+function trailColor(v: number): string {
+  switch(v){
+    case 0: return "red";
+    case 1: return "aliceblue";
+    case 2: return "cyan";
+    case 3: return "orange";
+    case 4: return "deeppink";
+    case 5: return "chartreuse";
+    case 6: return "greenyellow";
+    case 7: return "honeydew";
+    case 8: return "magenta";
+    case 9: return "springgreen";
+  }
+  return "black";
 }
