@@ -17,7 +17,6 @@ export default function Legends() {
           {expanded.value && <span>▼</span>}
         </button>
       </div>
-–
       {expanded.value &&
         (
           <div>
