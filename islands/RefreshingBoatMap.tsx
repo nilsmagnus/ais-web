@@ -17,6 +17,7 @@ export default function RefreshingBoatMap({ apiUrl }: { apiUrl: string }) {
     west: 5.3,
   });
 
+  const [trailLengthHours, setTrailLengthHours] = useState(12)
   const [shipLocations, setShipLocations] = useState<ShipPosition[]>([]);
   const [selectedUserIds, setSelectedUserids] = useState<string[]>([]);
   const [selectedShips, setSelectedShips] = useState<ShipPosition[]>([]);
@@ -30,10 +31,10 @@ export default function RefreshingBoatMap({ apiUrl }: { apiUrl: string }) {
   }, []);
 
   useEffect(() => {
-    fetchTrails(apiUrl, selectedUserIds).then((t) => {
+    fetchTrails(apiUrl, selectedUserIds, trailLengthHours).then((t) => {
       setTrails(t);
     });
-  }, [selectedUserIds]);
+  }, [selectedUserIds, trailLengthHours]);
 
   useEffect(() => {
     const selectedShipsUpdate: ShipPosition[] = [];
@@ -94,6 +95,16 @@ export default function RefreshingBoatMap({ apiUrl }: { apiUrl: string }) {
     setSelectedUserids([]);
   }
 
+  function prettyTrailLength(trailLengthHours: number): string {
+    if(trailLengthHours< 24){
+      return `${trailLengthHours} timer`;
+    } else {
+      const days = Math.floor(trailLengthHours/24);
+      const hours = trailLengthHours %24;
+      return `${days} dager ${hours} timer`
+    }
+  }
+
   return (
     <div>
       <BoatMap
@@ -105,10 +116,26 @@ export default function RefreshingBoatMap({ apiUrl }: { apiUrl: string }) {
       </BoatMap>
       {selectedShips.length > 0 &&
         (
-          <div className="absolute bottom-1 left-1 bg-slate-200 rounded-md p-2 flex">
-            <ShipInfo ships={selectedShips} />
-            <div className="cursor-pointer ml-1" onClick={clearSelection}>
-              ❌
+          <div className="absolute bottom-1 left-1 bg-slate-200 rounded-md p-2">
+            <div className="flex">
+              <ShipInfo ships={selectedShips} />
+              <div className="cursor-pointer ml-1" onClick={clearSelection}>
+                ❌
+              </div>
+            </div>
+            <div className="flex">
+              <label for="durationSelect" className="pr-2">Sporlengde</label>
+              <input
+                name="durationSelect"
+                className="w-max"
+                type="range"
+                min="1"
+                max="180"
+                step="1"
+                value={trailLengthHours}
+                onChange={(e) => {setTrailLengthHours(e.target.value)}}
+              />
+              <div className="p-1">{prettyTrailLength(trailLengthHours)}</div>
             </div>
           </div>
         )}
@@ -116,7 +143,7 @@ export default function RefreshingBoatMap({ apiUrl }: { apiUrl: string }) {
   );
 }
 
-async function fetchTrails(apiUrl: string, userIds: string[]): Promise<Trails> {
+async function fetchTrails(apiUrl: string, userIds: string[], trailLenghtHours:number): Promise<Trails> {
   if (userIds.length === 0) {
     return {};
   }
@@ -124,6 +151,7 @@ async function fetchTrails(apiUrl: string, userIds: string[]): Promise<Trails> {
     const url = new URL("/api/trails", apiUrl);
     userIds.forEach((u) => url.searchParams.append("user-id", u));
 
+    url.searchParams.set("tl", `${trailLenghtHours}`);
     const response = await fetch(url);
     return await response.json() as Trails;
   } catch (e) {

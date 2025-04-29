@@ -114,7 +114,6 @@ export default function BoatMap(
         const feature = e.features[0];
         const props = feature.properties;
         toggleUserId(`${props.userId}`);
-        createBoatPopup(map, hoverPopup)(e);
       });
     }
 
@@ -152,50 +151,6 @@ export default function BoatMap(
   );
 }
 
-function createBoatPopup(
-  map: MutableRef<maplibregl.Map | null>,
-  hoverPopup: MutableRef<maplibregl.Popup | null>,
-): (
-  ev:
-    & maplibregl.MapMouseEvent
-    & { features?: maplibregl.MapGeoJSONFeature[] },
-) => void {
-  return (e) => {
-    map.current!.getCanvas().style.cursor = "pointer";
-
-    if (!e.features || e.features.length === 0) return;
-    const feature = e.features[0];
-    const props = feature.properties;
-
-    // Create popup content
-    const popupContent = `
-          <div class="ship-info-box">
-            <h4>${props.shipName}</h4>
-            <h4>${props.userId}</h4>
-            <div>Type: ${props.category}</div>
-            <div>Fart: ${props.sog ?? "-"} knots</div>
-            <div>Retning: ${
-      props.heading === "511" || props.heading === undefined
-        ? "N/A"
-        : props.heading + "°"
-    }</div>
-          </div>
-        `;
-
-    // Set popup position and content
-    if (feature.geometry.type === "Point") {
-      hoverPopup.current!
-        .setLngLat([
-          feature.geometry.coordinates[0],
-          feature.geometry.coordinates[1],
-        ])
-        .setHTML(popupContent)
-        .addTo(map.current!);
-    } else {
-      console.log("feature geometry type is ", feature.geometry.type);
-    }
-  };
-}
 
 function createTrailLayer(): maplibregl.AddLayerObject {
   return {
